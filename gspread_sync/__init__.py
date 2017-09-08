@@ -14,6 +14,21 @@ import cPickle
 
 discoveryUrl = 'https://sheets.googleapis.com/$discovery/rest?version=v4'
 
+def createQueryRange(sheetName, rangeName=None):
+    queryRange = sheetName
+    if rangeName:
+        queryRange = "'%s'!%s" % (sheetName.replace("'", "\\'"), rangeName)
+    return queryRange
+
+def int26(index):
+    result = ''
+    result = chr(65 + index % 26) + result
+    index = index / 26
+    while index > 0:
+        result = chr(65 + index % 26) + result
+        index = index / 26
+    return result
+
 class Authorization(object):
     def __init__(self, path, secret_file="client_secret.json", secret_dump_path=None):
         self.credentials = self.get_credentials(
@@ -86,6 +101,22 @@ class Sheet(object):
                 raise e
         return {}
 
+    def insert(self, sheetName, rangeName=None, body=[], callback=None,
+            retries=3):
+        queryRange = createQueryRange(sheetName, rangeName)
+        try:
+            with self.apiLock:
+                request = self.service.spreadsheets().values().append(
+                        spreadsheetId=spreadsheetId, range=queryRange,
+                        body={"values": body}, valueInputOption="RAW").execute(num_retries=retries)
+                return request
+        except googleapiclient.errors.HttpError as e:
+            if callback:
+                return callback(e)
+            else:
+                raise e
+        return {}
+
     def newSheet(self, sheetName, header=[], callback=None, retries=3):
         queryRange = createQueryRange(sheetName)
         try:
@@ -110,12 +141,12 @@ class Sheet(object):
                 request = self.service.spreadsheets().values().update(
                         spreadsheeetId=self.sheedId, range=newQueryRange, body={
                             'values': [header]}, valueInputOption='RAW').execute(num_retries=retries)
-            except googleapiclient.errors.HttpError as e:
-                if callback:
-                    return callback(e)
-                else:
-                    raise e
-            return []
+        except googleapiclient.errors.HttpError as e:
+            if callback:
+                return callback(e)
+            else:
+                raise e
+        return []
 
 
 
