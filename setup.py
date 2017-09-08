@@ -28,6 +28,7 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Topic :: System :: Monitoring',
     ],
+    platforms='any',
     keywords='spreadsheet google',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
     install_requires=['google-api-python-client', 'httplib2', 'google-auth',
