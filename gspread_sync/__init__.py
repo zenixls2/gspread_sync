@@ -101,13 +101,17 @@ class Sheet(object):
                 raise e
         return {}
 
-    def insert(self, sheetName, rangeName=None, body=[], callback=None,
-            retries=3):
+    def insert(self, sheetName, rangeName=None, body=[], overwrite=False,
+            callback=None, retries=3):
+        insertDataOption = "INSERT_ROWS"
+        if overwrite:
+            insertDataOption = "OVERWRITE"
         queryRange = createQueryRange(sheetName, rangeName)
         try:
             with self.apiLock:
                 request = self.service.spreadsheets().values().append(
                         spreadsheetId=spreadsheetId, range=queryRange,
+                        insertDataOption=insertDataOption,
                         body={"values": body}, valueInputOption="RAW").execute(num_retries=retries)
                 return request
         except googleapiclient.errors.HttpError as e:
