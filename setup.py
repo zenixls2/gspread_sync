@@ -11,7 +11,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name='gspread_sync',
-    version='0.0.2',
+    version='0.0.3',
     description='google spreadsheet wrapper with multithread safety',
     long_description=long_description,
     url='https://github.com/zenixls2/gspread_sync',
@@ -25,7 +25,7 @@ setup(
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
         'License :: OSI Approved :: Apache Software License',
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
         'Topic :: System :: Monitoring',
     ],
     platforms='any',
