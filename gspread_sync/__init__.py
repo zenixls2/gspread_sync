@@ -44,12 +44,12 @@ class Authorization(object):
                 return cPickle.load(f)
         if not os.path.exists(credential_dir):
             os.makedirs(credential_dir)
-        flow = InstalledAppFlow.from_client_secret_file(
+        flow = InstalledAppFlow.from_client_secrets_file(
                 client_secret_file, scopes=scopes, redirect_uri=redirect_uri)
         flow.run_local_server()
         session = flow.authorized_session()
         with open(secret_dump_path, 'wb') as f:
-            cPickle.dump(session.credentails, f, cPickle.HIGHEST_PROTOCOL)
+            cPickle.dump(session.credentials, f, cPickle.HIGHEST_PROTOCOL)
         return session.credentials
 
 class Sheet(object):
@@ -110,10 +110,42 @@ class Sheet(object):
         try:
             with self.apiLock:
                 request = self.service.spreadsheets().values().append(
-                        spreadsheetId=spreadsheetId, range=queryRange,
+                        spreadsheetId=self.sheetId, range=queryRange,
                         insertDataOption=insertDataOption,
                         body={"values": body}, valueInputOption="RAW").execute(num_retries=retries)
                 return request
+        except googleapiclient.errors.HttpError as e:
+            if callback:
+                return callback(e)
+            else:
+                raise e
+        return {}
+
+    def getProperties(self, ranges=None, includeGridData=False, callback=None, retries=3):
+        try:
+            with self.apiLock:
+                result = self.service.spreadsheets().get(
+                        spreadsheetId=self.sheetId,
+                        ranges=ranges,
+                        includeGridData=includeGridData).execute()
+                return result
+        except googleapiclient.errors.HttpError as e:
+            if callback:
+                return callback(e)
+            else:
+                raise e
+        return {}
+
+    def removeSheet(self, sheetId, callback=None, retries=3):
+        try:
+            with self.apiLock:
+                result = self.service.spreadsheets().batchUpdate(
+                        spreadsheetId=self.sheetId,
+                        body={"requests": [{
+                            "deleteSheet": {
+                                "sheetId": sheetId}
+                            }]}).execute(num_retries=retries)
+                return result
         except googleapiclient.errors.HttpError as e:
             if callback:
                 return callback(e)
@@ -127,7 +159,7 @@ class Sheet(object):
             with self.apiLock:
                 result = self.service.spreadsheets().batchUpdate(
                         spreadsheetId=self.sheetId,
-                        body={"results": [{
+                        body={"requests": [{
                             "addSheet": {
                                 "properties": {
                                     "title": sheetName,
@@ -139,12 +171,13 @@ class Sheet(object):
                             }
                         }]}).execute(num_retries=retries)
                 if len(header) == 0:
-                    return
+                    return result['replies'][0]
                 newQueryRange = createQueryRange(
                         sheetName, 'A1:' + int26(len(header)-1) + '1')
                 request = self.service.spreadsheets().values().update(
-                        spreadsheeetId=self.sheedId, range=newQueryRange, body={
+                        spreadsheetId=self.sheetId, range=newQueryRange, body={
                             'values': [header]}, valueInputOption='RAW').execute(num_retries=retries)
+                return result['replies'][0]
         except googleapiclient.errors.HttpError as e:
             if callback:
                 return callback(e)
