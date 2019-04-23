@@ -10,7 +10,7 @@ from googleapiclient.http import build_http
 import os
 from threading import RLock
 import copy
-import cPickle
+import _pickle as cPickle
 
 discoveryUrl = 'https://sheets.googleapis.com/$discovery/rest?version=v4'
 
@@ -49,7 +49,7 @@ class Authorization(object):
         flow.run_local_server()
         session = flow.authorized_session()
         with open(secret_dump_path, 'wb') as f:
-            cPickle.dump(session.credentials, f, cPickle.HIGHEST_PROTOCOL)
+            cPickle.dump(session.credentials, f)
         return session.credentials
 
 class Sheet(object):
